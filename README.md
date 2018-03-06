@@ -19,14 +19,14 @@
 
 # 运行之前
 将vultr.py中config部分的变量修改：
-MYSQL_USER='mysql用户名'
-MYSQL_PASSWD='mysql密码'
-MYSQL_DB='mysql数据库名'
-VULTR_KEY='Vultr账户API Key，需要在Vultr账户中启用。请谨慎保管！'
-ALI_ACCESS_KEY_ID='阿里云用户Access Key ID，需要在阿里云账户中申请。请谨慎保管！'
-ALI_ACCESS_KEY_SECRET='与Access Key ID对应的Access Key Secret，请谨慎保管！'
-DOMAIN_NAME='阿里云的域名(eg: mydomain.com)'
-check_interval=检查时间间隔(至少要大于5)
+1. MYSQL_USER='mysql用户名'
+2. MYSQL_PASSWD='mysql密码'
+3. MYSQL_DB='mysql数据库名'
+4. VULTR_KEY='Vultr账户API Key，需要在Vultr账户中启用。请谨慎保管！'
+5. ALI_ACCESS_KEY_ID='阿里云用户Access Key ID，需要在阿里云账户中申请。请谨慎保管！'
+6. ALI_ACCESS_KEY_SECRET='与Access Key ID对应的Access Key Secret，请谨慎保管！'
+7. DOMAIN_NAME='阿里云的域名(eg: mydomain.com)'
+8. check_interval=检查时间间隔(至少要大于5)
 	
 
 
