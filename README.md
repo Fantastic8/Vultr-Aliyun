@@ -31,7 +31,7 @@
 
 
 # 运行方法
-	1. 从Github上下载源码
+	1. 从Github上下载源码 git clone https://github.com/Fantastic8/Vultr-Aliyun.git
 	2. cd Vultr-Aliyun
 	3. python3 vultr.py
 
@@ -54,3 +54,4 @@
 # 注意事项
 1. 请先在Vultr中创建好你的服务器，Snapshot和在阿里云上添加新的主机域名解析。之后再在程序中添加chain record然后选择13 开始自动检测。
 2. 删除Server或者Snapshot或者Domain record之前请先将包含其中之一的chain record删除，否则程序会报错。（没有写这一块的错误处理）
+3. 所有日志请参考vultr.log
