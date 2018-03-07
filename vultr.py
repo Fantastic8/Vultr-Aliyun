@@ -510,6 +510,8 @@ def delete_chain_record():
         return
 
 def check_status(SUBID,RecordId):
+    if not ping('www.baidu.com'):
+        return 'Unready'
     # ping ipv4
     ipv4 = get_server_by_SUBID(SUBID)['main_ip']
     if not ping(ipv4):
@@ -520,6 +522,8 @@ def check_status(SUBID,RecordId):
     return 'Normal'
 
 def check_chain_status_by_Label(Label):
+    if not ping('www.baidu.com'):
+        return 'Unready'
     cur.execute('select * from Chains where Label=\''+Label+'\'')
     chain=cur.fetchone()
     status=''
@@ -561,7 +565,7 @@ def repair_chain(Label):
     if status=='Blocked':
         print('A blocked chain(\''+Label+'\') has been detected! Repairing...')
         appendline_log('A blocked chain(\''+Label+'\') has been detected! Repairing...')
-        #change_ip()
+        change_ip_by_Label(Label)
     elif status=='Mismatch':
         print('A mismatch chain(\''+Label+'\') has been detected! Repairing...')
         appendline_log('A mismatch chain(\''+Label+'\') has been detected! Repairing...')
