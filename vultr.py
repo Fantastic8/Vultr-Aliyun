@@ -623,6 +623,8 @@ def monitoring():
             for j in range(0,60):
                 time.sleep(1)
         repair_chains()
+        show_chains()
+        show_menu()
 
 
 def _async_raise(tid, exctype):
