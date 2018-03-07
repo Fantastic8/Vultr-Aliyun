@@ -47,7 +47,7 @@ cur.execute("create table if not exists Chains(" +
             "Label varchar(20) binary not null,"+
             "SNAPSHOTID varchar(20) binary UNIQUE not null," +
             "SUBID varchar(20) binary UNIQUE not null," +
-            "RecordId varchar(20) binary UNIQUE not null,"+
+            "RecordId varchar(20) binary UNIQUE not null," +
             "Status varchar(10) binary not null," +
             "primary key(Label)" +
             ");")
@@ -83,17 +83,16 @@ def get_now():
 
 def appendline_log(message):
     logf = open(logf_name, mode='a', encoding='utf-8')
-    logf.writelines(get_now() + ' : ' + message+'\n')
+    logf.writelines('%-20s'%get_now() + ': ' + message+'\n')
     logf.flush()
     logf.close()
 
 
 def appendline_error(message):
     logf = open(logf_name, mode='a', encoding='utf-8')
-    logf.writelines(get_now() + ' ERROR: ' + message + '\n')
+    logf.writelines('%-20s'%get_now() + ' ERROR: ' + message + '\n')
     logf.flush()
     logf.close()
-    # !!!!Sent email!!!!!
 
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
                                                     Ali Cloud
@@ -271,7 +270,8 @@ def create_server(DCID, VPSPLANID, OSID, label, SNAPSHOTID=None):
     if SNAPSHOTID != None and SNAPSHOTID != '':
         SNAPSHOTID = ' --data \'SNAPSHOTID=' + SNAPSHOTID + '\''
         OSID='164'
-    results = os.popen('curl -H \'API-Key: ' + VULTR_KEY + '\' https://api.vultr.com/v1/server/create --data \'DCID=' + DCID + '\' --data \'VPSPLANID=' + VPSPLANID + '\' --data \'OSID=' + OSID + '\'' + SNAPSHOTID + ' --data \'enable_ipv6=yes\' --data \'enable_private_network=yes\' --data \'label=' + label + '\' --data \'hostname=' + label + '\'')
+    createquery='curl -H \'API-Key: ' + VULTR_KEY + '\' https://api.vultr.com/v1/server/create --data \'DCID=' + DCID + '\' --data \'VPSPLANID=' + VPSPLANID + '\' --data \'OSID=' + OSID + '\'' + SNAPSHOTID + ' --data \'enable_ipv6=yes\' --data \'enable_private_network=yes\' --data \'label=' + label + '\' --data \'hostname=' + label + '\''
+    results = os.popen(createquery)
     result = ''
     for line in results:
         result += line
@@ -329,7 +329,7 @@ def change_ip_by_Label(Label,DCID=None):
             destroy_server(server['SUBID'])
 
             #change aliyun domain record
-            change_record_ip_by_SUBID(chain[3],newserver['SUBID'])
+            #change_record_ip_by_SUBID(chain[3],newserver['SUBID'])
         else:
             appendline_error('Something went wrong when trying to get SNAPSHOTID from database using Label - ' + chain[0])
     else:
@@ -527,7 +527,6 @@ def check_chain_status_by_Label(Label):
         return 'Unready'
     cur.execute('select * from Chains where Label=\''+Label+'\'')
     chain=cur.fetchone()
-    status=''
     if chain:
         server=get_server_by_SUBID(chain[2])
         if server==None:
