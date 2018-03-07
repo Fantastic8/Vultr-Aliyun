@@ -270,6 +270,7 @@ FIREWALLGROUPID string (optional) The firewall group to assign to this server. S
 def create_server(DCID, VPSPLANID, OSID, label, SNAPSHOTID=None):
     if SNAPSHOTID != None and SNAPSHOTID != '':
         SNAPSHOTID = ' --data \'SNAPSHOTID=' + SNAPSHOTID + '\''
+        OSID='164'
     results = os.popen('curl -H \'API-Key: ' + VULTR_KEY + '\' https://api.vultr.com/v1/server/create --data \'DCID=' + DCID + '\' --data \'VPSPLANID=' + VPSPLANID + '\' --data \'OSID=' + OSID + '\'' + SNAPSHOTID + ' --data \'enable_ipv6=yes\' --data \'enable_private_network=yes\' --data \'label=' + label + '\' --data \'hostname=' + label + '\'')
     result = ''
     for line in results:
