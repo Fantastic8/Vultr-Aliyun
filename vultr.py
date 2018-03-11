@@ -113,7 +113,7 @@ def get_domain_records(domain_name,TypeKeyWord=None,RRKeyWord=None):
         return results
     except:
         print('Something went wrong when trying to get domain records')
-        appendline_error('Something went wrong when trying to get domain records response='+str(response)+' from \'get_domain_records(\''+domain_name+'\',\''+TypeKeyWord+'\',\''+RRKeyWord+'\')\'')
+        appendline_error('Something went wrong when trying to get domain records from \'get_domain_records(\''+domain_name+'\',\''+TypeKeyWord+'\',\''+RRKeyWord+'\')\'')
         return None
 
 
@@ -128,15 +128,15 @@ def get_domain_record_by_RecordId(RecordId):
         results = json.loads(response.decode())
         return results
     except:
-        print('Something went wrong when trying to get domain record by recordid response=' + str(response)+' from \'get_domain_record_by_RecordId(\''+RecordId+'\')')
-        appendline_error('Something went wrong when trying to get domain record by recordid response=' + str(response)+' from \'get_domain_record_by_RecordId(\''+RecordId+'\')')
+        print('Something went wrong when trying to get domain record by recordid from \'get_domain_record_by_RecordId(\''+RecordId+'\')')
+        appendline_error('Something went wrong when trying to get domain record by from \'get_domain_record_by_RecordId(\''+RecordId+'\')')
         return None
 
 def change_record_ip(RecordId, ip):
     record=get_domain_record_by_RecordId(RecordId)
     if record==None or not isinstance(record,dict) or not record.__contains__('RR') or not record.__contains__('Type') or ip==None:
-        print('Something went wrong when tyring update domain record(record=\''+record+'\'), response=' + response + ' from \'change_record_ip(\'' + RecordId + '\',\'' + ip + '\')\'')
-        appendline_error('Something went wrong when tyring update domain record(record=\''+record+'\'), response=' + response + ' from \'change_record_ip(\'' + RecordId + '\',\'' + ip + '\')\'')
+        print('Something went wrong when tyring update domain record(record=\''+record+'\') from \'change_record_ip(\'' + RecordId + '\',\'' + ip + '\')\'')
+        appendline_error('Something went wrong when tyring update domain record(record=\''+record+'\') from \'change_record_ip(\'' + RecordId + '\',\'' + ip + '\')\'')
         return None
     request = CommonRequest()
     request.set_domain('alidns.aliyuncs.com')
@@ -150,16 +150,15 @@ def change_record_ip(RecordId, ip):
         response = client.do_action_with_exception(request)
         results = json.loads(response.decode())
     except:
-        print('Something went wrong when tyring update domain record(\''+record['RR']+'.'+DOMAIN_NAME+'\'), response='+response+' from \'change_record_ip(\''+RecordId+'\',\''+ip+'\')\'')
-        appendline_error('Something went wrong when tyring change domain record(\''+record['RR']+'.'+DOMAIN_NAME+'\'), response='+response+' from \'change_record_ip(\''+RecordId+'\',\''+ip+'\')\'')
+        print('Something went wrong when tyring update domain record(\''+record['RR']+'.'+DOMAIN_NAME+'\') from \'change_record_ip(\''+RecordId+'\',\''+ip+'\')\'')
+        appendline_error('Something went wrong when tyring change domain record(\''+record['RR']+'.'+DOMAIN_NAME+'\') from \'change_record_ip(\''+RecordId+'\',\''+ip+'\')\'')
         return False
     if results['RecordId']==RecordId:
         appendline_log('Domain(\''+record['RR']+'.'+DOMAIN_NAME+'\') record('+RecordId+')\'s value changed to '+ip)
         print('Domain record change successfully!')
         return True
     else:
-        appendline_error('Something went wrong when tyring change domain record(\'' + record[
-            'RR'] + '.' + DOMAIN_NAME + '\'), response=' + response + ' from \'change_record_ip(\'' + RecordId + '\',\'' + ip + '\')\'')
+        appendline_error('Something went wrong when tyring change domain record(\'' + record['RR'] + '.' + DOMAIN_NAME + '\') from \'change_record_ip(\'' + RecordId + '\',\'' + ip + '\')\'')
         print('Failed to change domain record!')
         return False
 
@@ -180,7 +179,7 @@ def get_billing():
         j=json.loads(result)
         return j
     except:
-        appendline_error('Something went wrong when trying to get billing information result='+result+' from \'get_billing()\'')
+        appendline_error('Something went wrong when trying to get billing information from \'get_billing()\'')
         return None
 
 
@@ -197,7 +196,7 @@ def get_regions():
         j=json.loads(result)
         return j
     except:
-        appendline_error('Something went wrong when trying to get regions information result='+result+' from \'get_regions()\'')
+        appendline_error('Something went wrong when trying to get regions information from \'get_regions()\'')
         return None
 
 
@@ -212,7 +211,7 @@ def get_VPSPLAN_by_DCID(DCID):
         j=json.loads(result)
         return j
     except:
-        appendline_error('Something went wrong when trying to get VPSPLAN information result='+result+' from \'get_VPSPLAN_by_DCID('+str(DCID)+')\' ')
+        appendline_error('Something went wrong when trying to get VPSPLAN information from \'get_VPSPLAN_by_DCID('+str(DCID)+')\' ')
         return None
 
 
@@ -241,8 +240,8 @@ def get_servers():
         j=json.loads(result)
         return j
     except:
-        print('Something went wrong when trying to get json object from \'get_servers()\' function, result='+str(result))
-        appendline_error('Something went wrong when trying to get json object from \'get_servers()\' function, result='+str(result))
+        print('Something went wrong when trying to get json object from \'get_servers()\' function')
+        appendline_error('Something went wrong when trying to get json object from \'get_servers()\' function')
         return None
 
 
@@ -324,7 +323,7 @@ def create_server(DCID, VPSPLANID, OSID, label, SNAPSHOTID=None):
         appendline_log('A new Server('+label+') with SUBID '+j['SUBID']+' has been created')
         return j
     except:
-        appendline_error('Something went wrong when trying to create a new Server with result='+result+'from \'create_server(\''+DCID+'\', \''+VPSPLANID+'\',\''+ OSID+'\',\''+ label+'\', \''+SNAPSHOTID+'\')\'')
+        appendline_error('Something went wrong when trying to create a new Server with from \'create_server(\''+DCID+'\', \''+VPSPLANID+'\',\''+ OSID+'\',\''+ label+'\', \''+SNAPSHOTID+'\')\'')
         return None
 
 
@@ -437,8 +436,8 @@ def get_snapshots():
         j=json.loads(result)
         return j
     except:
-        print('Something went wrong when trying to get json object from \'get_snapshots()\' function result='+result)
-        appendline_error('Something went wrong when trying to get json object from \'get_snapshots()\' function result='+result)
+        print('Something went wrong when trying to get json object from \'get_snapshots()\' function')
+        appendline_error('Something went wrong when trying to get json object from \'get_snapshots()\' function')
         return None
 
 
@@ -470,8 +469,8 @@ def create_snapshot(SUBID,label=None):
         appendline_log('A new snapshot(' + label + ') has been created by SUBID(' + SUBID + ')')
         return j
     except:
-        print('Something went wrong when trying to create a new snapshot from \'create_snapshot(\''+SUBID+'\',\''+label+'\')\' function result='+result)
-        appendline_error('Something went wrong when trying to create a new snapshot from \'create_snapshot(\''+SUBID+'\',\''+label+'\')\' function result='+result)
+        print('Something went wrong when trying to create a new snapshot from \'create_snapshot(\''+SUBID+'\',\''+label+'\')\' function')
+        appendline_error('Something went wrong when trying to create a new snapshot from \'create_snapshot(\''+SUBID+'\',\''+label+'\')\' function')
         return None
 
 
@@ -581,8 +580,11 @@ def check_status(SUBID,RecordId):
     if not ping(ipv4):
         return 'Blocked'
     else:  # check domain record value
-        if ipv4 != get_domain_record_by_RecordId(RecordId)['Value']:
-            return 'Mismatch'
+        try:
+            if ipv4 != get_domain_record_by_RecordId(RecordId)['Value']:
+                return 'Mismatch'
+        except:
+            return 'Unready'
     return 'Normal'
 
 def check_chain_status_by_Label(Label):
@@ -601,8 +603,11 @@ def check_chain_status_by_Label(Label):
         if not ping(ipv4):
             return 'Blocked'
         else: #check domain record value
-            if ipv4!=get_domain_record_by_RecordId(chain[3])['Value']:
-                return 'Mismatch'
+            try:
+                if ipv4!=get_domain_record_by_RecordId(chain[3])['Value']:
+                    return 'Mismatch'
+            except:
+                return 'Unready'
         return 'Normal'
         #ping domain
     else:
@@ -617,8 +622,8 @@ def check_chains():
             con.commit()
         except:
             con.rollback()
-            print('Something went wrong when trying to update chain record - '+chain[0])
-            appendline_error('Something went wrong when trying to update chain record - '+chain[0]+' from \'check_chains()\'')
+            print('Something went wrong when trying to update chain record')
+            appendline_error('Something went wrong when trying to update chain record from \'check_chains()\'')
 
 
 def repair_chain(Label):
