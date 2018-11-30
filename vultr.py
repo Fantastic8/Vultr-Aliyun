@@ -2,15 +2,14 @@
 @ Mark Zhang
 created on 2018.3.6
 '''
-
 import ctypes
 import inspect
 import os
-import sys
 import json
 import time
 import pymysql
 import datetime
+import traceback
 import threading
 import subprocess
 from aliyunsdkcore.client import AcsClient
@@ -19,17 +18,20 @@ from aliyunsdkcore.request import CommonRequest
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
                                                         Config
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-MYSQL_USER=''
-MYSQL_PASSWD=''
-MYSQL_DB=''
+MYSQL_USER = ''
+MYSQL_PASSWD = ''
+MYSQL_DB = ''
 VULTR_KEY = ''
 ALI_ACCESS_KEY_ID = ''
 ALI_ACCESS_KEY_SECRET = ''
-client = AcsClient(ALI_ACCESS_KEY_ID , ALI_ACCESS_KEY_SECRET, 'cn-hangzhou')
-DOMAIN_NAME=''
+client = AcsClient(ALI_ACCESS_KEY_ID, ALI_ACCESS_KEY_SECRET, 'cn-hangzhou')
+DOMAIN_NAME = ''
 logf_name = 'vultr.log'
-# interval must greater than 5 minutes
-check_interval = 10
+# interval better be greater than 5 minutes
+CHECK_INTERVAL_MAX = 10
+CHECK_INTERVAL_MIN = 4
+check_int = CHECK_INTERVAL_MAX
+CHECK_PORT = ''
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
                         Database
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -56,17 +58,31 @@ con.commit()
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
                                                     tool
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-# check ip: 0-success 1-fail
+# check ip: 0-fail 1-success
 def ping(ip):
     p = subprocess.Popen([r'./ping.sh', ip], stdout=subprocess.PIPE)
     result = p.stdout.read()
     # print(result)
-    if result == b'0\n' or result == b'0':
+    if result == b'1\n' or result == b'1':
         # ----ping success----
         return True
     else:
         # ----ping fail----
         return False
+
+# check ip: 0-fail 1-success
+def tcping(ip, port, hierarchy=3):
+    p = subprocess.Popen([r'./tcping.sh', ip, port], stdout=subprocess.PIPE)
+    result = p.stdout.read()
+    # print(result)
+    if result == b'1\n' or result == b'1':
+        # ----ping success----
+        return True
+    elif result == b'0\n' or result == b'0':
+        # ----ping fail----
+        return False
+    else:
+        appendline_error('tcping(\'' + str(ip) + '\', \'' + str(port) + '\')', 'TCPING', hierarchy)
 
 
 def get_now():
@@ -81,23 +97,47 @@ def get_now():
     return time
 
 
-def appendline_log(message):
-    logf = open(logf_name, mode='a', encoding='utf-8')
-    logf.writelines('%-20s'%get_now() + ': ' + message+'\n')
-    logf.flush()
-    logf.close()
+def appendline_log(message, label, hierarchy=0):
+    try:
+        logf = open(logf_name, mode='a', encoding='utf-8')
+
+        formatl = ''
+        for i in range(0, hierarchy):
+            formatl += '\t'
+
+        logf.writelines('%-20s' % get_now() + ': ' + label + '\n')
+        for line in message.split('\n'):
+            logf.writelines('                     ' + formatl + line + '\n')
+
+        logf.flush()
+        logf.close()
+    except:
+        traceback.print_exc()
 
 
-def appendline_error(message):
-    logf = open(logf_name, mode='a', encoding='utf-8')
-    logf.writelines('%-20s'%get_now() + ' ERROR: ' + message + '\n')
-    logf.flush()
-    logf.close()
+def appendline_error(message, label, hierarchy=0):
+    try:
+        logf = open(logf_name, mode='a', encoding='utf-8')
+
+        formatl = ''
+        for i in range(0, hierarchy):
+            formatl += '\t'
+
+        logf.writelines('%-20s' % get_now() + ': \033[1;31;40m\tERROR\033[0m in' + label + '\n')
+        message += '\n'+traceback.format_exc()
+        for line in message.split('\n'):
+            logf.writelines('                     ' + formatl + line + '\n')
+        logf.flush()
+        logf.close()
+    except:
+        traceback.print_exc()
 
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
                                                     Ali Cloud
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-def get_domain_records(domain_name,TypeKeyWord=None,RRKeyWord=None):
+
+
+def get_domain_records(domain_name, TypeKeyWord = None, RRKeyWord = None, hierarchy=2):
     request = CommonRequest()
     request.set_domain('alidns.aliyuncs.com')
     request.set_version('2015-01-09')
@@ -113,11 +153,11 @@ def get_domain_records(domain_name,TypeKeyWord=None,RRKeyWord=None):
         return results
     except:
         print('Something went wrong when trying to get domain records')
-        appendline_error('Something went wrong when trying to get domain records from \'get_domain_records(\''+domain_name+'\',\''+TypeKeyWord+'\',\''+RRKeyWord+'\')\'')
+        appendline_error('get_domain_records(\''+str(domain_name)+'\',\''+str(TypeKeyWord)+'\',\''+str(RRKeyWord)+'\')', 'GET DOMAIN RECORD', hierarchy)
         return None
 
 
-def get_domain_record_by_RecordId(RecordId):
+def get_domain_record_by_RecordId(RecordId, hierarchy=2):
     request = CommonRequest()
     request.set_domain('alidns.aliyuncs.com')
     request.set_version('2015-01-09')
@@ -129,14 +169,14 @@ def get_domain_record_by_RecordId(RecordId):
         return results
     except:
         print('Something went wrong when trying to get domain record by recordid from \'get_domain_record_by_RecordId(\''+RecordId+'\')')
-        appendline_error('Something went wrong when trying to get domain record by from \'get_domain_record_by_RecordId(\''+RecordId+'\')')
+        appendline_error('get_domain_record_by_RecordId(\'' + str(RecordId) + '\')', 'GET DOMAIN RECORD BY RECORDID', hierarchy)
         return None
 
-def change_record_ip(RecordId, ip):
+def change_record_ip(RecordId, ip, hierarchy=2):
     record=get_domain_record_by_RecordId(RecordId)
     if record==None or not isinstance(record,dict) or not record.__contains__('RR') or not record.__contains__('Type') or ip==None:
-        print('Something went wrong when tyring update domain record(record=\''+record+'\') from \'change_record_ip(\'' + RecordId + '\',\'' + ip + '\')\'')
-        appendline_error('Something went wrong when tyring update domain record(record=\''+record+'\') from \'change_record_ip(\'' + RecordId + '\',\'' + ip + '\')\'')
+        print('Something went wrong when tyring update domain record(record=\''+str(record)+'\') from \'change_record_ip(\'' + RecordId + '\',\'' + ip + '\')\'')
+        appendline_error('change_record_ip(\'' + str(RecordId) + '\',\'' + str(ip) + '\') - record = \'' + str(record) + '\')', 'CHANGE RECORD IP', hierarchy)
         return None
     request = CommonRequest()
     request.set_domain('alidns.aliyuncs.com')
@@ -151,35 +191,35 @@ def change_record_ip(RecordId, ip):
         results = json.loads(response.decode())
     except:
         print('Something went wrong when tyring update domain record(\''+record['RR']+'.'+DOMAIN_NAME+'\') from \'change_record_ip(\''+RecordId+'\',\''+ip+'\')\'')
-        appendline_error('Something went wrong when tyring change domain record(\''+record['RR']+'.'+DOMAIN_NAME+'\') from \'change_record_ip(\''+RecordId+'\',\''+ip+'\')\'')
+        appendline_error('change_record_ip(\'' + str(RecordId) + '\',\'' + str(ip) + '\') - record(\'' + str(record['RR']) + '.' + str(DOMAIN_NAME) + '\')', 'CHANGE RECORD IP', hierarchy)
         return False
-    if results['RecordId']==RecordId:
-        appendline_log('Domain(\''+record['RR']+'.'+DOMAIN_NAME+'\') record('+RecordId+')\'s value changed to '+ip)
+    if results['RecordId'] == RecordId:
+        appendline_log('Domain(\''+str(record['RR'])+'.'+str(DOMAIN_NAME)+'\') record('+str(RecordId)+')\'s value changed to '+str(ip), 'CHANGE RECORD IP', hierarchy)
         print('Domain record change successfully!')
         return True
     else:
-        appendline_error('Something went wrong when tyring change domain record(\'' + record['RR'] + '.' + DOMAIN_NAME + '\') from \'change_record_ip(\'' + RecordId + '\',\'' + ip + '\')\'')
+        appendline_error('change_record_ip(\'' + str(RecordId) + '\',\'' + str(ip) + '\') - record(\'' + str(record['RR']) + '.' + str(DOMAIN_NAME) + '\')', 'CHANGE RECORD IP', hierarchy)
         print('Failed to change domain record!')
         return False
 
 
 def change_record_ip_by_SUBID(RecordId,SUBID):
-    return change_record_ip(RecordId,get_ip_by_SUBID(SUBID))
+    return change_record_ip(RecordId, get_ip_by_SUBID(SUBID))
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
                                                     Vultr Account
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 
-def get_billing():
+def get_billing(hierarchy=1):
     results = os.popen('curl -H \'API-Key: ' + VULTR_KEY + '\' https://api.vultr.com/v1/account/info').readlines()
     result = ''
     for line in results:
         result += line
     try:
-        j=json.loads(result)
+        j = json.loads(result)
         return j
     except:
-        appendline_error('Something went wrong when trying to get billing information from \'get_billing()\'')
+        appendline_error('get_billing() - result = ' + str(result), 'GET BILLING', hierarchy)
         return None
 
 
@@ -187,7 +227,7 @@ def get_billing():
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
                                                     Vultr region
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-def get_regions():
+def get_regions(hierarchy=1):
     results = os.popen('curl https://api.vultr.com/v1/regions/list')
     result = ''
     for line in results:
@@ -196,11 +236,11 @@ def get_regions():
         j=json.loads(result)
         return j
     except:
-        appendline_error('Something went wrong when trying to get regions information from \'get_regions()\'')
+        appendline_error('get_regions() - result = ' + str(result), 'GET REGIONS', hierarchy)
         return None
 
 
-def get_VPSPLAN_by_DCID(DCID):
+def get_VPSPLAN_by_DCID(DCID, hierarchy=1):
     results = os.popen('curl https://api.vultr.com/v1/regions/availability_vc2?DCID=' + str(DCID))
     result = ''
     if results==None:
@@ -211,7 +251,7 @@ def get_VPSPLAN_by_DCID(DCID):
         j=json.loads(result)
         return j
     except:
-        appendline_error('Something went wrong when trying to get VPSPLAN information from \'get_VPSPLAN_by_DCID('+str(DCID)+')\' ')
+        appendline_error('get_VPSPLAN_by_DCID(' + str(DCID) + ') - result = ' + str(result), 'GET VPS PLAN BY DCID', hierarchy)
         return None
 
 
@@ -231,23 +271,26 @@ Server state:
 '''''''''
 
 
-def get_servers():
+def get_servers(hierarchy=1):
     results = os.popen('curl -H \'API-Key: ' + VULTR_KEY + '\' https://api.vultr.com/v1/server/list')
     result = ''
     for line in results:
         result += line
     try:
-        j=json.loads(result)
+        #print(result)
+        j = json.loads(result)
         return j
     except:
         print('Something went wrong when trying to get json object from \'get_servers()\' function')
-        appendline_error('Something went wrong when trying to get json object from \'get_servers()\' function')
+        appendline_error('get_servers() - result = ' + str(result), 'GET SERVERS', hierarchy)
         return None
 
 
 
 def get_server_by_label(label):
     servers = get_servers()
+    if servers==None or not isinstance(servers,dict):
+        return None
     for server in servers.keys():
         if servers[server].__contains__('label'):
             if servers[server]['label'] == label:
@@ -320,65 +363,73 @@ def create_server(DCID, VPSPLANID, OSID, label, SNAPSHOTID=None):
         result += line
     try:
         j = json.loads(result)
-        appendline_log('A new Server('+label+') with SUBID '+j['SUBID']+' has been created')
+        appendline_log('Created new Server( '+str(label)+' ) with SUBID '+j['SUBID'], 'CREATE SERVER', 2)
         return j
     except:
-        appendline_error('Something went wrong when trying to create a new Server with from \'create_server(\''+DCID+'\', \''+VPSPLANID+'\',\''+ OSID+'\',\''+ label+'\', \''+SNAPSHOTID+'\')\'')
+        appendline_error('create_server(\''+str(DCID)+'\', \''+str(VPSPLANID)+'\',\'' + str(OSID)+'\',\'' + str(label)+'\', \'' + str(SNAPSHOTID) + '\')', 'CREATE SERVER', 2)
         return None
 
 
 
-def destroy_server(SUBID,label=None):
+def destroy_server(SUBID, label=None):
     os.popen('curl -H \'API-Key: ' + VULTR_KEY + '\' https://api.vultr.com/v1/server/destroy --data \'SUBID=' + SUBID + '\'')
-    appendline_log('A server('+('Irrelevant' if label==None else label)+') with SUBID: '+SUBID+' has been destroyed.')
+    appendline_log('Destroyed server( '+('Irrelevant' if label==None else str(label))+' ) with SUBID : '+str(SUBID)+' .', 'DESTROY SERVER', 2)
 
 
-def reboot_server(SUBID,label=None):
+def reboot_server(SUBID, label=None):
     os.popen('curl -H \'API-Key: ' + VULTR_KEY + '\' https://api.vultr.com/v1/server/reboot --data \'SUBID=' + SUBID + '\'')
-    appendline_log('A server('+label+') with SUBID: ' + SUBID + ' has been rebooted.')
+    appendline_log('Rebooted server( '+str(label)+' ) with SUBID : ' + str(SUBID) + ' .', 'REBOOT SERVER', 2)
 
 
 def restore_snapshot_server(SUBID, SNAPSHOTID,label=None):
     os.popen('curl -H \'API-Key: ' + VULTR_KEY + '\' https://api.vultr.com/v1/server/restore_snapshot --data \'SUBID=' + SUBID + '\' --data \'SNAPSHOTID=' + SNAPSHOTID + '\'')
-    appendline_log('A server('+label+') with SUBID: ' + SUBID + ' has been restored with snapshot whose SNAPSHOTID: '+SNAPSHOTID+'.')
+    appendline_log('Restored server( '+str(label)+' ) with SUBID : ' + str(SUBID) + ' with SNAPSHOTID : ' + str(SNAPSHOTID) + ' .', 'RESTORE SNAPSHOT SERVER', 2)
 
 
 def start_server(SUBID,label=None):
     os.popen('curl -H \'API-Key: ' + VULTR_KEY + '\' https://api.vultr.com/v1/server/start --data \'SUBID=' + SUBID + '\'')
-    appendline_log('A server('+label+') with SUBID: ' + SUBID + ' has been started.')
+    appendline_log('Started server( '+str(label)+' ) with SUBID : ' + str(SUBID) + ' .', 'START SERVER', 2)
 
 
 def change_ip_by_Label(Label,DCID=None):
     cur.execute('select * from Chains where Label=\''+Label+'\'')
-    chain=cur.fetchone()
+    chain = cur.fetchone()
     if not chain:
-        appendline_error('Something went wrong when trying to change ip on chain with label - '+Label+' : Chain not exists, from \'change_ip_by_Label(\''+Label+'\',\''+str(DCID)+'\')\'')
+        appendline_error('change_ip_by_Label(\''+str(Label)+'\',\''+str(DCID)+'\') - Chain not exists', 'CHANGE IP BY LABEL', 1)
         return
-    server=get_server_by_SUBID(chain[2])
+    server = get_server_by_SUBID(chain[2])
     if server != None and isinstance(server, dict) and server.__contains__('DCID') and server.__contains__('VPSPLANID') and server.__contains__('OSID') and server.__contains__('label'):
         SNAPSHOTID = chain[1]
         if SNAPSHOTID != None:
             # create new server
-            if DCID==None:
-                DCID=server['DCID']
+            if DCID == None:
+                DCID = server['DCID']
             newserver = create_server(DCID, server['VPSPLANID'], server['OSID'], server['label'], SNAPSHOTID)
+            if newserver == None:
+                appendline_error('change_ip_by_Label(\''+str(Label)+'\',\''+str(DCID)+'\') - Failed to create a new server', 'CHANGE IP BY LABEL', 1)
+                return
             try:
                 cur.execute('update Chains set SUBID=\'' + newserver['SUBID'] + '\' where Label=\'' + Label + '\'')
+                appendline_log('Updated Chain(' + str(Label) +')\'s SUBID to ' + str(newserver['SUBID']), 'CHANGE IP BY LABEL', 1)
                 con.commit()
             except:
                 con.rollback()
-                appendline_error('Something went wrong when updating chain record('+Label+') with SUBID('+newserver['SUBID']+'), from \'change_ip_by_Label(\''+Label+'\',\''+str(DCID)+'\')\'')
-                return
+                try:
+                    appendline_error('change_ip_by_Label(\''+str(Label)+'\',\''+str(DCID)+'\') - SUBID(' + str(newserver['SUBID']) + ')', 'CHANGE IP BY LABEL', 1)
+                    return
+                except:
+                    appendline_error('change_ip_by_Label(\''+str(Label)+'\',\''+str(DCID)+'\') - newserver(' + str(newserver) + ')', 'CHANGE IP BY LABEL', 1)
+                    return
 
             # destroy old server
-            destroy_server(server['SUBID'],Label)
+            destroy_server(server['SUBID'], Label)
 
             #change aliyun domain record
             #change_record_ip_by_SUBID(chain[3],newserver['SUBID'])
         else:
-            appendline_error('Something went wrong when trying to get SNAPSHOTID from database using Label - ' + chain[0]+' from \'change_ip_by_Label(\''+Label+'\',\''+str(DCID)+'\')\'')
+            appendline_error('change_ip_by_Label(\''+str(Label)+'\',\''+str(DCID)+'\') - Failed to get SNAPSHOTID from database using Label - ' + str(chain[0]), 'CHANGE IP BY LABEL', 1)
     else:
-        appendline_error('Something went wrong when trying to analysis server json with SUBID - '+chain[2]+' from \'change_ip_by_Label(\''+Label+'\',\''+str(DCID)+'\')\'')
+        appendline_error('change_ip_by_Label(\''+str(Label)+'\',\''+str(DCID)+'\') - Failed to analysis server json with SUBID - ' + str(chain[2]), 'CHANGE IP BY LABEL', 1)
 
 
 def change_ip():
@@ -413,7 +464,7 @@ def change_ip():
             subid=cur.fetchone()[2]
             vpsplanid=get_VPSPLANID_by_SUBID(subid)
             if vpsplanid!=None and int(vpsplanid) in get_VPSPLAN_by_DCID(DCID):
-                change_ip_by_Label(Label,DCID)
+                change_ip_by_Label(Label, DCID)
             else:
                 print('This region is currently not available')
                 return
@@ -437,7 +488,7 @@ def get_snapshots():
         return j
     except:
         print('Something went wrong when trying to get json object from \'get_snapshots()\' function')
-        appendline_error('Something went wrong when trying to get json object from \'get_snapshots()\' function')
+        appendline_error('get_snapshots() - result = ' + str(result), 'GET SNAPSHOTS', 2)
         return None
 
 
@@ -459,30 +510,30 @@ def get_SNAPSHOTID_by_description(description):
     return None
 
 
-def create_snapshot(SUBID,label=None):
+def create_snapshot(SUBID, label=None):
     results = os.popen('curl -H \'API-Key: ' + VULTR_KEY + '\' https://api.vultr.com/v1/snapshot/create --data \'SUBID=' + SUBID + '\'')
     result = ''
     for line in results:
         result += line
     try:
         j=json.loads(result)
-        appendline_log('A new snapshot(' + label + ') has been created by SUBID(' + SUBID + ')')
+        appendline_log('Created a new snapshot( ' + str(label) + ' ) by SUBID( ' + str(SUBID) + ' )', 'CREATE SNAPSHOT', 2)
         return j
     except:
         print('Something went wrong when trying to create a new snapshot from \'create_snapshot(\''+SUBID+'\',\''+label+'\')\' function')
-        appendline_error('Something went wrong when trying to create a new snapshot from \'create_snapshot(\''+SUBID+'\',\''+label+'\')\' function')
+        appendline_error('create_snapshot(\''+str(SUBID)+'\',\''+str(label)+'\')', 'CREAT SNAPSHOT', 2)
         return None
 
 
 def destroy_snapshot(SNAPSHOTID,label=None):
     os.popen('curl -H \'API-Key: ' + VULTR_KEY + '\' https://api.vultr.com/v1/snapshot/destroy --data \'SNAPSHOTID=' + SNAPSHOTID + '\'')
-    appendline_log('A snapshot('+label+') with SNAPSHOTID '+SNAPSHOTID+' has been destroyed')
+    appendline_log('Destroyed snapshot( '+str(label)+' ) with SNAPSHOTID '+str(SNAPSHOTID)+' .', 'DESTROY SNAPSHOT', 2)
 
 
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
                                                     Database
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-def add_chain_record():
+def add_chain_record(hierarchy=0):
     Label=''
     SNAPSHOTID=''
     SUBID=''
@@ -515,6 +566,8 @@ def add_chain_record():
     #select SUBID
     print('--------Select Vultr Server--------')
     servers=get_servers()
+    if servers==None or not isinstance(servers,dict):
+        return None
     serverindex=[]
     sindex=1
     for server in servers.keys():
@@ -547,13 +600,14 @@ def add_chain_record():
         cur.execute("insert into Chains values('"+Label+"','"+SNAPSHOTID+"','"+SUBID+"','"+RecordId+"','"+stat+"')")
         con.commit()
         print('New chain record added successfully!')
-        appendline_log('A new chain record has been created. Label: '+Label+' SNAPSHOTID: '+SNAPSHOTID+' SUBID:'+SUBID+' RecordId: '+RecordId+' Status: '+stat)
+        appendline_log('Created a new chain record. Label : '+str(Label)+'; SNAPSHOTID : '+str(SNAPSHOTID)+'; SUBID : '+str(SUBID)+'; RecordId : '+str(RecordId)+'; Status : '+str(stat), 'ADD CHAIN RECORD', hierarchy)
     except:
         print('Cannot create this record. Notice: Label, SNAPSHOTID, SUBID and REcordID are UNIQUE in database.')
+        appendline_error('add_chain_record()', 'ADD CHAIN RECORD', hierarchy)
         con.rollback()
 
 
-def delete_chain_record():
+def delete_chain_record(hierarchy=0):
     cur.execute('select * from Chains')
     records=cur.fetchall()
     print('---------------- Chain Records ----------------')
@@ -564,9 +618,10 @@ def delete_chain_record():
         cur.execute('delete from Chains where Label=\''+Label+'\'')
         con.commit()
         print('Delete chain record successfully!\n')
-        appendline_log('A chain record has been deleted. Label: ' + Label )
+        appendline_log('Deleted chain record. Label: ' + Label, 'DELETE CHAIN RECORD', hierarchy)
     except:
         print('ERROR Input!\n')
+        appendline_error('delete_chain_record', 'DELETE CHAIN RECORD', hierarchy)
         return
 
 def check_status(SUBID,RecordId):
@@ -577,7 +632,7 @@ def check_status(SUBID,RecordId):
     if server==None or not isinstance(server,dict):
         return 'Unready'
     ipv4 = server['main_ip']
-    if not ping(ipv4):
+    if not tcping(ipv4,CHECK_PORT):
         return 'Blocked'
     else:  # check domain record value
         try:
@@ -591,7 +646,7 @@ def check_chain_status_by_Label(Label):
     if not ping('www.baidu.com'):
         return 'Unready'
     cur.execute('select * from Chains where Label=\''+Label+'\'')
-    chain=cur.fetchone()
+    chain = cur.fetchone()
     if chain:
         server=get_server_by_SUBID(chain[2])
         if server==None:
@@ -600,7 +655,7 @@ def check_chain_status_by_Label(Label):
             return 'Unready'
         #ping ipv4
         ipv4=server['main_ip']
-        if not ping(ipv4):
+        if not tcping(ipv4,CHECK_PORT):
             return 'Blocked'
         else: #check domain record value
             try:
@@ -615,7 +670,7 @@ def check_chain_status_by_Label(Label):
 
 def check_chains():
     cur.execute('select * from Chains')
-    chains=cur.fetchall()
+    chains = cur.fetchall()
     for chain in chains:
         try:
             cur.execute('update Chains set Status=\''+check_chain_status_by_Label(chain[0])+'\' where Label=\''+chain[0]+'\'')
@@ -623,55 +678,74 @@ def check_chains():
         except:
             con.rollback()
             print('Something went wrong when trying to update chain record')
-            appendline_error('Something went wrong when trying to update chain record from \'check_chains()\'')
+            appendline_error('check_chains()', 'CHECK CHAINS', 0)
 
 
-def repair_chain(Label):
-    status=check_chain_status_by_Label(Label)
+def repair_chain(Label, hierarchy=1):
+    result = False
+    status_now = check_chain_status_by_Label(Label)
     cur.execute('select * from Chains where Label=\''+Label+'\'')
-    chain =cur.fetchone()
-    if status=='Blocked':
-        print('A blocked chain(\''+Label+'\') has been detected! Repairing...')
-        appendline_log('A blocked chain(\''+Label+'\') has been detected! Repairing...')
+    chain = cur.fetchone()
+    status_past = chain[4]
+
+    if status_past != 'Normal' and status_now == 'Normal':
+        print('Chain(\'' + Label + '\') has been repaired')
+        appendline_log('Repaired Chain( \'' + Label + '\' )', 'REPAIR CHAIN', hierarchy)
+    elif status_now == 'Blocked':
+        print('A blocked chain(\'' + Label + '\') has been detected! Repairing...')
+        appendline_log('Detected blocked chain( \'' + Label + '\' )! Repairing...', 'REPAIR CHAIN', hierarchy)
         change_ip_by_Label(Label)
-    elif status=='Mismatch':
-        print('A mismatch chain(\''+Label+'\') has been detected! Repairing...')
-        appendline_log('A mismatch chain(\''+Label+'\') has been detected! Repairing...')
-        change_record_ip_by_SUBID(chain[3],chain[2])
+        result = True
+    elif status_now == 'Mismatch':
+        print('A mismatch chain(\'' + Label + '\') has been detected! Repairing...')
+        appendline_log('Detected mismatch chain( \'' + Label + '\' )! Repairing...', 'REPAIR CHAIN', hierarchy)
+        change_record_ip_by_SUBID(chain[3], chain[2])
+        result = True
+    elif status_now == 'Unready':
+        result = True
+    elif status_now == 'Server Not Exists':
+        appendline_log('Lost server on chain( \'' + Label + '\' )!!!', 'REPAIR CHAIN', hierarchy)
+
     #update status
     try:
-        newstatus=check_chain_status_by_Label(Label)
-        cur.execute('update Chains set Status=\'' + newstatus + '\' where Label=\'' + Label + '\'')
+        cur.execute('update Chains set Status=\'' + status_now + '\' where Label=\'' + Label + '\'')
         con.commit()
-        if status!='Blocked' and status!='Mismatch':
-            pass
-        elif (status=='Blocked' or status=='Mismatch') and newstatus=='Normal':
-            print('Chain(\''+Label+'\') has been repaired')
-            appendline_log('Chain(\''+Label+'\') has been repaired')
-        else:
-            print('Failed to repaire chain(\''+Label+'\'), please check them manually!')
-            appendline_log('Failed to repaire '+status+' chain(\''+Label+'\')')
     except:
         con.rollback()
         print('Something went wrong when trying to update chain record - ' + Label)
-        appendline_error('Something went wrong when trying to update chain record - ' + Label+' from \'repair_chain(\''+Label+'\')\'')
+        appendline_error('repair_chain(\''+str(Label)+'\')', 'REPAIR CHAIN', hierarchy)
 
-def repair_chains():
+    return result
+
+def repair_chains(hierarchy=1):
     print('---------------------Checking chains...---------------------')
     cur.execute('select * from Chains')
-    chains=cur.fetchall()
+    chains = cur.fetchall()
+    blocked = False
     #repair chains
     for chain in chains:
-        repair_chain(chain[0])
+        if repair_chain(chain[0], hierarchy) == False:
+            blocked = True
+
+    #there are some chains still being blocked or not ready
+    if blocked:
+        check_int = CHECK_INTERVAL_MIN
+    else:
+        check_int = CHECK_INTERVAL_MAX
 
     # clean up irrelevant servers
+    cur.execute('select * from Chains')
+    chains = cur.fetchall()
     servers = get_servers()
+    if servers==None or not isinstance(servers,dict):
+        print('---------------------All chains have been checked---------------------')
+        return None
     find=False
     for server in servers.keys():
-        find=False
+        find = False
         for chain in chains:
-            if servers[server]['SUBID']==chain[2]:
-                find=True
+            if servers[server]['SUBID'] == chain[2]:
+                find = True
                 break
         if not find:
             destroy_server(servers[server]['SUBID'])
@@ -687,8 +761,8 @@ runflag=False
 def monitoring():
     print('Start Monitor Chains')
     while True:
-        for i in range(0,check_interval):
-            for j in range(0,60):
+        for i in range(0, check_int):
+            for j in range(0, 60):
                 time.sleep(1)
         repair_chains()
         print('#Last Check time: '+get_now()+'#\n')
@@ -728,7 +802,7 @@ def print_server_information(server):
         print('----------------Server ' + str(server['SUBID']) + '----------------')
     else:
         return None
-    if ping(str(server['main_ip'])):
+    if tcping(str(server['main_ip']),CHECK_PORT):
         print('Life: Alive')
     else:
         print('Life: Dead')
@@ -768,6 +842,8 @@ def print_server_information(server):
 
 def print_servers_information():
     servers = get_servers()
+    if servers==None or not isinstance(servers,dict):
+        return None
     for server in servers.keys():
         print_server_information(servers[server])
         print('')
@@ -920,7 +996,7 @@ con.close()
 print('==========================Auto Vultr has been terminated==========================')
 
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-                                                        Vultr_server Database Design
+                                                    Vultr_server Database Design
 create table if not exists Chains(
     Label varchar(20) binary not null,
     SNAPSHOTID varchar(20) binary UNIQUE not null,
