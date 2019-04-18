@@ -123,7 +123,7 @@ def appendline_error(message, label, hierarchy=0):
         for i in range(0, hierarchy):
             formatl += '\t'
 
-        logf.writelines('%-20s' % get_now() + ': \033[1;31;40m\tERROR\033[0m in' + label + '\n')
+        logf.writelines('%-20s' % get_now() + ': \033[1;31;40m\tERROR\033[0m in ' + label + '\n')
         message += '\n'+traceback.format_exc()
         for line in message.split('\n'):
             logf.writelines('                     ' + formatl + line + '\n')
@@ -737,7 +737,7 @@ def repair_chains(hierarchy=1):
     cur.execute('select * from Chains')
     chains = cur.fetchall()
     servers = get_servers()
-    if servers==None or not isinstance(servers,dict):
+    if servers == None or not isinstance(servers, dict):
         print('---------------------All chains have been checked---------------------')
         return None
     find=False
