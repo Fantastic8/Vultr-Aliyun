@@ -19,7 +19,7 @@ from aliyunsdkcore.request import CommonRequest
                                                         Config
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 MYSQL_USER = '' # mysql database user name
-MYSQL_PASSWD = '' # mysql database user passwork
+MYSQL_PASSWD = '' # mysql database user password
 MYSQL_DB = '' # mysql database name
 VULTR_KEY = '' # vultr api key
 ALI_ACCESS_KEY_ID = '' # Aliyun access key id
