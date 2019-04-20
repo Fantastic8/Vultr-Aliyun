@@ -1,6 +1,6 @@
-#Usage
+# Usage
 
-##<a name=ADDRECORD>Add Record</a>
+## <a name=ADDRECORD>Add Record</a>
 
 Select '1' to add a record and give your record a Label (The Label is just a name of your record, so name it whatever you want!).
 
