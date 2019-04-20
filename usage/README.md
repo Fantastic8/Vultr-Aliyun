@@ -21,3 +21,14 @@ Finally it will list all of your Domain records [Server, RecordID, IP] on Aliyun
 When you see this message, it means that you have successfully added a new record to database, and you are ready to perform other operations.
 
 ![Add Success](https://raw.githubusercontent.com/Fantastic8/Vultr-Aliyun/master/images/AR_Success.png)
+
+
+```flow
+st=>start: 开始
+op=>operation: My Operation
+cond=>condition: Yes or No?
+e=>end
+st->op->cond
+cond(yes)->e
+cond(no)->op
+&```
