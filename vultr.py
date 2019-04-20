@@ -18,20 +18,20 @@ from aliyunsdkcore.request import CommonRequest
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
                                                         Config
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-MYSQL_USER = ''
-MYSQL_PASSWD = ''
-MYSQL_DB = ''
-VULTR_KEY = ''
-ALI_ACCESS_KEY_ID = ''
-ALI_ACCESS_KEY_SECRET = ''
+MYSQL_USER = '' # mysql database user name
+MYSQL_PASSWD = '' # mysql database user passwork
+MYSQL_DB = '' # mysql database name
+VULTR_KEY = '' # vultr api key
+ALI_ACCESS_KEY_ID = '' # Aliyun access key id
+ALI_ACCESS_KEY_SECRET = '' # Aliyun access key secret
 client = AcsClient(ALI_ACCESS_KEY_ID, ALI_ACCESS_KEY_SECRET, 'cn-hangzhou')
-DOMAIN_NAME = ''
-logf_name = 'vultr.log'
+DOMAIN_NAME = '' # Aliyun domain name
+logf_name = 'vultr.log' # vultr log file name
 # interval better be greater than 5 minutes
-CHECK_INTERVAL_MAX = 10
-CHECK_INTERVAL_MIN = 4
+CHECK_INTERVAL_MAX = 10 # maximum check interval (minutes)
+CHECK_INTERVAL_MIN = 4 # # minimum check interval (minutes)
 check_int = CHECK_INTERVAL_MAX
-CHECK_PORT = ''
+CHECK_PORT = '1010' # slave's port which master will use tcping to check, make sure this port is open on slave server!
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
                         Database
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
