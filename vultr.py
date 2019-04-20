@@ -1,5 +1,5 @@
 '''
-@ Mark Zhang
+@ Pink Beast
 created on 2018.3.6
 '''
 import ctypes
