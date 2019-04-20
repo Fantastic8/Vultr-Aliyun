@@ -1,58 +1,122 @@
 # Vultr-Aliyun
-定时检测vultr服务器连接情况并自动修复的python3程序
 
-# 项目简介
-此程序用于定时检测vultr服务器ip是否故障。若故障则将自动删除并重新创建新的服务器然后自动连接到对应的域名下。
+**Vultr-Aliyun** is a command-line tool which helps to automatically redeploy blocked server and synchronize with [**Aliyun**](https://wanwang.aliyun.com/domain/com/?spm=5176.10695662.1158081.1.4fde4234L5A46c) domain and [**Vultr**](https://www.vultr.com/) snapshot.
 
 
-# 平台
-	1. 阿里云，并需要有可使用域名
-	2. Vultr
-	3. 一台国内服务器
+## Quick Start
+To run **Vultr-Aliyun** tool:
+
+```
+python3 vultr.py
+``` 
+
+And you can see a list of all your records and main menu.
+
+![Main Menu](https://raw.githubusercontent.com/Fantastic8/Vultr-Aliyun/master/images/main.png)
+
+Then select ```13``` to start monitoring.
+
+![Monitoring](https://raw.githubusercontent.com/Fantastic8/Vultr-Aliyun/master/images/monitoring.png)
+
+It's better if you run this tool as a background process, so that monitoring process will continue when you log out from SSH, and you can achieve that by using [**screen**](https://linux.die.net/man/1/screen).
 
 
-# 服务器运行环境
-	1. Linxu操作系统
-	2. Python3
-	3. Mysql
-	4. 阿里云核心SDK包 (运行命令行: Sudo pip3 install aliyun-python-sdk-core-v3 安装)
+## Prerequisites
++ An inland linux server (Master)
++ Vultr Servers (Slave)
++ Aliyun Domain
++ [**Aliyun API**](https://helpcdn.aliyun.com/document_detail/53045.html?parentId=30347)
++ [**Vultr API**](https://www.vultr.com/api/)
 
-# 运行之前
-将vultr.py中config部分的变量修改：
-1. MYSQL_USER='mysql用户名'
-2. MYSQL_PASSWD='mysql密码'
-3. MYSQL_DB='mysql数据库名'
-4. VULTR_KEY='Vultr账户API Key，需要在Vultr账户中启用。请谨慎保管！'
-5. ALI_ACCESS_KEY_ID='阿里云用户Access Key ID，需要在阿里云账户中申请。请谨慎保管！'
-6. ALI_ACCESS_KEY_SECRET='与Access Key ID对应的Access Key Secret，请谨慎保管！'
-7. DOMAIN_NAME='阿里云的域名(eg: mydomain.com)'
-8. check_interval=检查时间间隔(至少要大于5)
-	
+## Requirements
++ python3
++ mysql
++ pymysql
++ [Aliyun SDK](https://help.aliyun.com/document_detail/53090.html) 
++ [tcping](https://gist.github.com/cnDelbert/5fb06ccf10c19dbce3a7)
+
+## Installation
+
+Install Mysql
+
+Install [tcping](https://gist.github.com/cnDelbert/5fb06ccf10c19dbce3a7)
+
+Install python3:
+
+```
+sudo apt-get install python3
+```
+
+Install pymysql
+
+Install Aliyun SDK:
+
+```
+sudo pip3 install aliyun-python-sdk-core-v3
+```
+
+Download **Vultr-Aliyun** using git clone:
+
+```
+git clone https://github.com/Fantastic8/Vultr-Aliyun.git
+```
+
+## Configuration
+
+Set up **Mysql**:
+
+1. Create a mysql user
+2. Create a database for **Vultr-Aliyun**
+
+Set up **vultr.py**:
+
+```
+cd Vultr-Aliyun
+vi vultr.py
+```
+
+Modify the following:
+
+```
+MYSQL_USER = 'Your mysql user name'
+MYSQL_PASSWD = 'Your mysql user password'
+MYSQL_DB = 'Your mysql database name'
+VULTR_KEY = 'Vultr api key'
+ALI_ACCESS_KEY_ID = 'Aliyun access key id'
+ALI_ACCESS_KEY_SECRET = 'Aliyun access key secret'
+client = AcsClient(ALI_ACCESS_KEY_ID, ALI_ACCESS_KEY_SECRET, 'cn-hangzhou')
+DOMAIN_NAME = 'Aliyun domain name'
+logf_name = 'vultr.log' # vultr log file name
+
+# interval better be greater than 5 minutes
+CHECK_INTERVAL_MAX = 10 # maximum check interval (minutes)
+CHECK_INTERVAL_MIN = 4  # minimum check interval (minutes)
+check_int = CHECK_INTERVAL_MAX
+CHECK_PORT = '1010' # slave's port which master will use tcping to check, make sure this port is open on slave server!
+```
+
+After that, you can run **vultr.py**:
+
+```
+python3 vultr.py
+```
+
+## Structure
+
+![Structure](https://raw.githubusercontent.com/Fantastic8/Vultr-Aliyun/master/images/structure.png)
+
+## Usage
+
+See [**usage**](https://github.com/Fantastic8/Vultr-Aliyun/blob/master/usage/README.md) for more details.
+
+## Warning
++ Please prepare your vultr servers, snapshots and Aliyun domain records first, then add chain record in **Vultr-Aliyun**.
++ Please **delete** related **chain record** before you delete server instance or snapshot or domain record.
++ Please check **vultr.log** if anything goes wrong.
++ Usually need to wait until second checking interval to repair chain completely, because server needs time to reboot.
 
 
-# 运行方法
-	1. 从Github上下载源码 git clone https://github.com/Fantastic8/Vultr-Aliyun.git
-	2. cd Vultr-Aliyun
-	3. python3 vultr.py
+# Author
 
++ [**Pink Beast**](https://github.com/Fantastic8)
 
-# 菜单说明
-1. Add chain record - 添加一条链记录，链记录将Vultr服务器与Snapshot与域名解析连接起来。注意！所有没有被添加进链记录的Vultr主机会在定时检测时被自动  删除！！！为了防止Server在创建五分钟之内不能被删除的情况。
-2. Delete chain record - 删除一条链记录。删除链记录不会直接删除服务器或是snapshot或是域名解析。
-3. Show all servers - 显示Vultr账户上所有主机信息
-4. Show all snapshots - 显示Vultr账户上所有Snapshot信息
-5. Show Aliyun domain 'A' records - 显示阿里云账户上所有A记录的域名解析
-6. Show server by label - 通过标签查找Vultr账户上的主机，并显示该主机信息
-7. Show snapshot by description - 通过描述查找Vultr账户上的Snapshot，并显示该Snapshot信息
-8. Show Aliyun domain 'A' record by RRKeyWord - 通过主机名模糊查找阿里云账户上的A记录的域名解析
-9. Show vultr account billing - 显示Vultr账户账单
-10. Repair chains immediately - 立刻修复所有链记录(修复包括：检查服务器是否能ping通，检查域名解析是否正确。程序会自动修复链记录的错误)
-11. Change ip immediately - 选择一条链记录，修改它的ip地址(修改ip地址可以选择服务器地区。并会删除旧服务器创建新服务器)
-12. Refresh - 刷新链记录状态
-13. Start Monitoring - 开始监控(监控时无法查看以上所有内容，只有在退出监控后才能使用上述所有功能)
-
-# 注意事项
-1. 请先在Vultr中创建好你的服务器，Snapshot和在阿里云上添加新的主机域名解析。之后再在程序中添加chain record然后选择13 开始自动检测。
-2. 删除Server或者Snapshot或者Domain record之前请先将包含其中之一的chain record删除，否则程序会报错。（没有写这一块的错误处理）
-3. 所有日志请参考vultr.log
-4. 在更换ip地址时，需要第二次检测才能修复dns解析，因为创建新服务器时ip地址会获取为0.0.0.0，等第二次检测时程序会自动修复地址解析不匹配问题
