@@ -115,6 +115,7 @@ When you deploy a server on **vultr**, there is a chance that this **IP** will b
 See [**usage**](https://github.com/Fantastic8/Vultr-Aliyun/blob/master/usage/README.md) for more details.
 
 ## Warning
++ All vultr servers that not exist in chain record will be **deleted** !!!!!! Please add all your vultr servers into chain record.
 + Please prepare your vultr servers, snapshots and Aliyun domain records first, then add chain record in **Vultr-Aliyun**.
 + Please **delete** related **chain record** before you delete server instance or snapshot or domain record.
 + Please check **vultr.log** if anything goes wrong.
