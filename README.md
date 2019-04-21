@@ -2,6 +2,7 @@
 
 **Vultr-Aliyun** is a command-line tool which helps to automatically redeploy blocked server and synchronize with [**Aliyun**](https://wanwang.aliyun.com/domain/com/?spm=5176.10695662.1158081.1.4fde4234L5A46c) domain and [**Vultr**](https://www.vultr.com/) snapshot.
 
+Also see [中文文档](https://github.com/Fantastic8/Vultr-Aliyun/blob/master/%E8%AF%BB%E6%88%91.md)
 
 ## Quick Start
 To run **Vultr-Aliyun** tool:
