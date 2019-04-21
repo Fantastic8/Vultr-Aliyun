@@ -101,6 +101,10 @@ After that, you can run **vultr.py**:
 python3 vultr.py
 ```
 
+### Why you need a Vultr Snapshot
+
+When you deploy a server on **vultr**, there is a chance that this **IP** will be blocked in the future. So after configuration of your server and keeping all services running, you can create a **snapshot** of server so that it will automatically resume to the point where you create a snapshot at.
+
 ## Structure
 
 ![Structure](https://raw.githubusercontent.com/Fantastic8/Vultr-Aliyun/master/images/structure.png)
