@@ -1,3 +1,3 @@
 #!/bin/bash
-TCPING=`tcping -t 10 $1 $2 | grep 'open' | wc -l`
+TCPING=`tcpping -t 10 $1 $2 | grep 'open' | wc -l`
 echo $TCPING
