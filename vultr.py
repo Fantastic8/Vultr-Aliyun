@@ -31,7 +31,7 @@ logf_name = 'vultr.log' # vultr log file name
 CHECK_INTERVAL_MAX = 10 # maximum check interval (minutes)
 CHECK_INTERVAL_MIN = 4 # # minimum check interval (minutes)
 check_int = CHECK_INTERVAL_MAX
-CHECK_PORT = '1010' # slave's port which master will use tcping to check, make sure this port is open on slave server!
+CHECK_PORT = '1010' # slave's port which master will use tcpping to check, make sure this port is open on slave server!
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
                         Database
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -71,18 +71,18 @@ def ping(ip):
         return False
 
 # check ip: 0-fail 1-success
-def tcping(ip, port, hierarchy=3):
-    p = subprocess.Popen([r'./tcping.sh', ip, port], stdout=subprocess.PIPE)
+def tcpping(ip, port, hierarchy=3):
+    p = subprocess.Popen([r'./tcpping.sh', ip, port], stdout=subprocess.PIPE)
     result = p.stdout.read()
     # print(result)
-    if result == b'1\n' or result == b'1':
+    if result == b'5\n' or result == b'5':
         # ----ping success----
         return True
     elif result == b'0\n' or result == b'0':
         # ----ping fail----
         return False
     else:
-        appendline_error('tcping(\'' + str(ip) + '\', \'' + str(port) + '\')', 'TCPING', hierarchy)
+        appendline_error('tcpping(\'' + str(ip) + '\', \'' + str(port) + '\')', 'TCPPING', hierarchy)
 
 
 def get_now():
@@ -632,7 +632,7 @@ def check_status(SUBID,RecordId):
     if server==None or not isinstance(server,dict):
         return 'Unready'
     ipv4 = server['main_ip']
-    if not tcping(ipv4,CHECK_PORT):
+    if not tcpping(ipv4,CHECK_PORT):
         return 'Blocked'
     else:  # check domain record value
         try:
@@ -655,7 +655,7 @@ def check_chain_status_by_Label(Label):
             return 'Unready'
         #ping ipv4
         ipv4=server['main_ip']
-        if not tcping(ipv4,CHECK_PORT):
+        if not tcpping(ipv4,CHECK_PORT):
             return 'Blocked'
         else: #check domain record value
             try:
@@ -802,7 +802,7 @@ def print_server_information(server):
         print('----------------Server ' + str(server['SUBID']) + '----------------')
     else:
         return None
-    if tcping(str(server['main_ip']),CHECK_PORT):
+    if tcpping(str(server['main_ip']),CHECK_PORT):
         print('Life: Alive')
     else:
         print('Life: Dead')
