@@ -12,6 +12,7 @@ import datetime
 import traceback
 import threading
 import subprocess
+from random import choice
 from aliyunsdkcore.client import AcsClient
 from aliyunsdkcore.request import CommonRequest
 
@@ -32,6 +33,8 @@ CHECK_INTERVAL_MAX = 10 # maximum check interval (minutes)
 CHECK_INTERVAL_MIN = 4 # # minimum check interval (minutes)
 check_int = CHECK_INTERVAL_MAX
 CHECK_PORT = '1010' # slave's port which master will use tcpping to check, make sure this port is open on slave server!
+RANDOM_REGION = True # True: randomly select new region from REGION_LIST when detected a blocked server; False: keep the same region as the old server
+REGION_LIST = ['Atlanta', 'Dallas', 'Chicago', 'Los Angeles', 'Silicon Valley', 'Seattle', 'Miami'] # regions that can be randomly selected for new server
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
                         Database
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -82,7 +85,8 @@ def tcpping(ip, port, hierarchy=3):
         # ----ping fail----
         return False
     else:
-        appendline_error('tcpping(\'' + str(ip) + '\', \'' + str(port) + '\')', 'TCPPING', hierarchy)
+        print(result)
+        appendline_error('tcpping(\'' + str(ip) + '\', \'' + str(port) + '\') ' + str(result), 'TCPPING', hierarchy)
 
 
 def get_now():
@@ -447,15 +451,15 @@ def change_ip():
 
     #select DCID
     print('Regions available')
-    regions=get_regions()
-    regionslist=[]
-    index=0
+    regions = get_regions()
+    regionslist = []
+    index = 0
     for region in regions.keys():
         print(str(index+1)+'. '+regions[region]['name']+'  '+regions[region]['DCID'])
         regionslist.append(regions[region]['DCID'])
-        index+=1
+        index += 1
     selection=input('\nPlease select a region you would like to switch your server to(Default: same as old server): ')
-    if selection==None or selection=='':
+    if selection == None or selection == '':
         change_ip_by_Label(Label)
     else:
         try:
@@ -632,7 +636,7 @@ def check_status(SUBID,RecordId):
     if server==None or not isinstance(server,dict):
         return 'Unready'
     ipv4 = server['main_ip']
-    if not tcpping(ipv4,CHECK_PORT):
+    if not tcpping(ipv4, CHECK_PORT):
         return 'Blocked'
     else:  # check domain record value
         try:
@@ -655,7 +659,7 @@ def check_chain_status_by_Label(Label):
             return 'Unready'
         #ping ipv4
         ipv4=server['main_ip']
-        if not tcpping(ipv4,CHECK_PORT):
+        if not tcpping(ipv4, CHECK_PORT):
             return 'Blocked'
         else: #check domain record value
             try:
@@ -694,7 +698,20 @@ def repair_chain(Label, hierarchy=1):
     elif status_now == 'Blocked':
         print('A blocked chain(\'' + Label + '\') has been detected! Repairing...')
         appendline_log('Detected blocked chain( \'' + Label + '\' )! Repairing...', 'REPAIR CHAIN', hierarchy)
-        change_ip_by_Label(Label)
+
+        # same region
+        if RANDOM_REGION == False:
+            change_ip_by_Label(Label)
+        else:
+        # radom region
+            new_region = choice(REGION_LIST)
+
+            regions = get_regions()
+            for region in regions.keys():
+                if regions[region]['name'] == new_region:
+                    change_ip_by_Label(Label, regions[region]['DCID'])
+                    break
+
         result = True
     elif status_now == 'Mismatch':
         print('A mismatch chain(\'' + Label + '\') has been detected! Repairing...')

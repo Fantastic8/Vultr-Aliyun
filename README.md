@@ -99,6 +99,8 @@ CHECK_INTERVAL_MAX = 10 # maximum check interval (minutes)
 CHECK_INTERVAL_MIN = 4  # minimum check interval (minutes)
 check_int = CHECK_INTERVAL_MAX
 CHECK_PORT = '1010' # slave's port which master will use tcping to check, make sure this port is open on slave server!
+RANDOM_REGION = True # True: randomly select new region from REGION_LIST when detected a blocked server; False: keep the same region as the old server
+REGION_LIST = ['Atlanta', 'Dallas', 'Chicago', 'Los Angeles', 'Silicon Valley', 'Seattle', 'Miami'] # regions that can be randomly selected for new server
 ```
 
 After that, you can run **vultr.py**:
