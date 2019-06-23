@@ -704,14 +704,17 @@ def repair_chain(Label, hierarchy=1):
             change_ip_by_Label(Label)
         else:
         # radom region
+            flag_find = False
             new_region = choice(REGION_LIST)
 
             regions = get_regions()
             for region in regions.keys():
                 if regions[region]['name'] == new_region:
                     change_ip_by_Label(Label, regions[region]['DCID'])
+                    flag_find = True
                     break
-
+            if flag_find = False:
+                change_ip_by_Label(Label)
         result = True
     elif status_now == 'Mismatch':
         print('A mismatch chain(\'' + Label + '\') has been detected! Repairing...')
